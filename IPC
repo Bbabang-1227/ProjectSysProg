@@ -1,0 +1,66 @@
+IPC (Intersection Processor Communication)
+
+========사용자 정의 메시지 함수 추가========
+1. Cpp에 함수 정의
+afx_msg LRESULT CSysProg9MemShareDlg::OnUserMessage(WPARAM w, LPARAM l)
+
+{SetDlgItemText(IDC_EDIT, PtrFile);
+  return 0;}
+  
+2. Cpp 메시지 맵에 추가
+ON_MESSAGE(WM_USER+1 , &CSysProg9MemShareDlg::OnUserMessage)
+
+3. 헤더에 족보 추가
+afx_msg LRESULT OnUserMessage(WPARAM w, LPARAM l);
+
+
+==================파이프==================
+-Server
+// 1. 파이프 생성
+HANDLE hPipe = CreateNamedPipe(
+      _T("\\\\.\\pipe\\mymultipipe"), // 파이프 이름 설정
+			PIPE_ACCESS_DUPLEX,             // dwOpenMode / INBOUND = READ / OUTBOUND = WRITE / DUPLEX = READ+WRITE /
+			PIPE_TYPE_BYTE,                 // dwPipeMode
+			3,	                        // 접속 인스턴스 최대 수 
+			4096, 4096,	                // outbuf, in buf
+			0,	                        // timeout(OS에게 맡김 : 50ms)
+			NULL);                          // 동기화 적용여부
+
+// 2. 접속대기 TRUE 반납전에는 함수에서 빠져나오지못함
+BOOL bIsConnect = ConnectNamedPipe((HANDLE)대상파이프, (lpOverlapped)동기화유무);
+
+-Client
+// 1. 파일 생성
+HANDLE hPipe = CreateFile(
+      _T("\\\\.\\pipe\\mymultipipe"),  // 서버에서 설정한 파이프 이름
+      GENERIC_READ or GENERIC_WRITE,   // dwDesiredAccess / 둘중하나만 사용 아니면 GENERIC_ALL 사용
+      0,                               // dwSharedMode
+      NULL,                            // dw보안설정
+      OPEN_EXISTING,                   // dwCreationDiposition / 파이프용도? / CREATE_NEW / CREATE_ALWAYS / OPEN_EXISTING / OPEN_ALWAYS / TRUNCATE_EXISTING 
+      0,                               // dwFlagsandAttributes / ?
+      NULL);                           // GENERIC_READ 액세스 권한을 가진 템플릿 파일에 대한 유효한 핸들
+
+// 2. CreateFile 에서 정상적으로 연결됫다면 INVALID_HANDLE_VALUE 값을 반환
+if (hPipe != INVALID_HANDLE_VALUE) break;
+
+-Server & Client
+// SEND
+BOOL bSuccess = WriteFile(
+      hPipe,                             // (HANDLE)
+      szOutput,                          // lpBuffer
+    (lstrlen(szOutput)+1)*sizeof(TCHAR), // NumberOfBytesToWrite
+      &dwWritten,                        // lpNumberOfBytesWritten / 실사용
+      NULL);                             // lpOverlapped / 동기화
+      
+// RECEIVE
+BOOL bSuccess = ReadFile(
+      hPipe,                             // (HANDLE)
+      szInput,                           // lpBuffer
+      255,                               // NumberOfBytesToWrite
+      &dwRead,                           // lpNumberOfBytesWritten / 실사용
+      NULL);                             // lpOverlapped / 동기화
+
+기타 파이프 관련 함수
+
+1.BOOL bIsConnect = WaitNamedPipe((LPCWSTR)파이프이름, (DWORD)타임아웃);
+2.LARGE_INTEGER __ GetFileSizeEx(파일핸들, &LARGE_INTEGER);

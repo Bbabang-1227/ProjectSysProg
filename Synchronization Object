@@ -1,0 +1,140 @@
+synchronization object ==> 
+
+1. Mutex = Bool 타입, 하나의 공유자원을 보호/관리
+
+==========CONSTRUCTOR==========
+HANDLE hMutex = CreateMutex(NULL, FALSE, NULL(이름)); // 이름이있으면 Open으로 동작
+==========CONSTRUCTOR==========
+
+========CRITICAL SECTION========
+WaitForSingleObject(hMutex, INFINITE); // 현존 스레드중 뮤텍스를 사용여부를 판별하여 임계영역 진입
+ReleaseMutex(hMutex); // !!뮤텍스반환!!
+========CRITICAL SECTION========
+
+CloseHandle(hMutex); //!!핸들반납!!
+
+
+2. Semaphore = int 타입, 사용가능한 자원의 개수를 카운트하는 동기화 객체
+
+==========CONSTRUCTOR==========
+HANDLE hSemDown = CreateSemaphore(NULL, 3, 3, NULL); //3개의 사용가능한 세마포어 생성
+==========CONSTRUCTOR==========
+
+========CRITICAL SECTION========
+WaitForSingleObject(hSemDown, INFINITE); //이후 뮤텍스와 사용방법 동일
+ReleaseSemaphore(hSemDown, 1, NULL); // !!세마포어반납
+========CRITICAL SECTION========
+
+CloseHandle(hSemDown);//!!핸들반납!!
+
+
+3. Event = 윈도우 메시지와 비슷한 역할, 어떤 사건이 일어났음을 알리는 동기화 객체
+
+==========CONSTRUCTOR==========
+HANDLE hEventAuto = CreateEvent(NULL, FALSE, FALSE, NULL); //자동 리셋 이벤트
+HANDLE hEventUnAuto = CreateEvent(NULL, TRUE, FALSE, NULL); //수동 리셋 이벤트
+(ResetEvent(hEventUnAuto); 수동으로 이벤트 초기화해줘야함
+
+===========이벤트 시작점========
+SetEvent(hEventUnAuto);
+===========이벤트 시작점========
+
+=======기다리는 스레드들========
+WaitForSingleObject(hEventUnAuto, INFINITE);
+=======기다리는 스레드들========
+
+CloseHandle(hEventAuto); //!!핸들반납!!
+CloseHandle(hEventUnAuto); //!!핸들반납!!
+
+이벤트를 기다리고있는 스레드가 여러개일 경우 수동리셋 이벤트를 사용해야함(수동으로 이벤트 초기화)
+
+
+4. File
+HANDLE hFile = CreateFile(
+		_T("c:\\temp\\Naru.txt"),
+		GENERIC_READ,
+		0,
+		NULL,
+		OPEN_EXISTING,
+		FILE_ATTRIBUTE_NORMAL,
+		NULL);
+	//1.파일 매핑 오브젝트를 생성
+	HANDLE hfMap = CreateFileMapping(
+		hFile,
+		NULL,
+		PAGE_READONLY, // ?
+		0,
+		0,
+		NULL);
+	//2.파일 매핑 오브젝트를 가상메모리 주소공간에 연결한다
+	TCHAR* pText = (TCHAR*)MapViewOfFile(
+		hfMap,
+		FILE_MAP_READ,
+		0,
+		0,
+		0);
+	//3.파일을 변수처럼 사용한다
+	AfxMessageBox(pText);
+
+	//4.뒷정리
+	UnmapViewOfFile(pText);
+	CloseHandle(hfMap);
+	CloseHandle(hFile);
+
+5.Process
+HANDLE hOnceSem;
+BOOL CSysProg6SemDownApp::InitInstance()
+{
+int nAnswer;
+	hOnceSem = CreateSemaphore(NULL, 3, 3, _T("MyOnceSem"));
+	while (true)
+	{
+		if (WaitForSingleObject(hOnceSem, 1) == WAIT_TIMEOUT)
+		{
+			nAnswer = AfxMessageBox(_T("이미 다른 프로세스가 실행중입니다 기다리시겠습니까?"),MB_OKCANCEL);
+			switch (nAnswer)
+			{
+			case IDOK: {
+				continue;
+				break;
+			}
+			case IDCANCEL: {
+				CloseHandle(hOnceSem);
+				return FALSE;
+				break;
+			}
+			default:
+				break;
+			}
+		}
+		else
+		{
+			break;
+		}
+	}
+.
+.
+.
+}
+
+int CSysProg6SemDownApp::ExitInstance()
+{
+	//TODO: 추가한 추가 리소스를 처리합니다.
+	AfxOleTerm(FALSE);
+	ReleaseSemaphore(hOnceSem,1,NULL);
+	CloseHandle(hOnceSem);
+	return CWinApp::ExitInstance();
+}
+
++ 유니코드 판별
+if (IsTextUnicode(pText, 10, NULL))
+	{
+		//UNI
+		AfxMessageBox(pText);
+	}
+	else
+	{
+		//ANSI
+		char* pAnsiText = (char*)pText;
+		MessageBoxA(NULL,pAnsiText,"Beats!!",MB_OK);
+	}
