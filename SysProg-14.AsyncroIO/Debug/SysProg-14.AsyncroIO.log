@@ -1,0 +1,3 @@
+﻿  SysProg-14.AsyncroIODlg.cpp
+C:\Users\BIT\source\repos\ProjectSysProg\SysProg-14.AsyncroIO\SysProg-14.AsyncroIO\SysProg-14.AsyncroIODlg.cpp(459,13): warning C4244: '인수': 'LONGLONG'에서 'DWORD'(으)로 변환하면서 데이터가 손실될 수 있습니다.
+  SysProg-14.AsyncroIO.vcxproj -> C:\Users\BIT\source\repos\ProjectSysProg\SysProg-14.AsyncroIO\Debug\SysProg-14.AsyncroIO.exe
